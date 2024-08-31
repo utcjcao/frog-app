@@ -1,5 +1,3 @@
-!pip install fluidsynth pretty_midi keras_tuner
-
 import collections
 import datetime
 import fluidsynth
@@ -11,27 +9,19 @@ import pretty_midi
 import seaborn as sns
 import tensorflow as tf
 import keras_tuner as kt
-
-from IPython import display
-from matplotlib import pyplot as plt
-from typing import Optional
-
-data_dir = pathlib.Path('data/maestro-v3.0.0')
-if not data_dir.exists():
-  tf.keras.utils.get_file(
-      'maestro-v3.0.0-midi.zip',
-      origin='https://storage.googleapis.com/magentadata/datasets/maestro/v3.0.0/maestro-v3.0.0-midi.zip',
-      extract=True,
-      cache_dir='.', cache_subdir='data',
-  )
-
-filenames = glob.glob(str(data_dir/'**/*.mid*'))
-
-print(filenames)
-
-import numpy as np
-import pretty_midi
 from tqdm import tqdm
+from sklearn.preprocessing import LabelEncoder
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import LSTM, Dense, Dropout
+import load_data
+import variables
+
+load_data.load()
+filenames = glob.glob(str(variables.get_data_dir()/'**/*.mid*'))
+
+filenames = filenames[:5]
+print('done loading')
 
 # Step 1: Convert MIDI Files to Note Sequences
 def midi_to_sequence(midi_file):
@@ -63,15 +53,15 @@ def create_dataset(midi_files, seq_length):
             y.append(seq_out)
     return np.array(X), np.array(y)
 
+print('done functions')
+
 # Usage Example
 seq_length = 50  # Define the sequence length
 X, y = create_dataset(filenames, seq_length)
 
-# Step 4: You would now proceed to build your RNN model using X and y as the training data.
+print('done dataset')
 
-import numpy as np
-from sklearn.preprocessing import LabelEncoder
-from tensorflow.keras.utils import to_categorical
+# Step 4: You would now proceed to build your RNN model using X and y as the training data.
 
 def preprocess_data_in_batches(X, y, encoder, batch_size=1000):
     vocab_size = len(encoder.classes_)
@@ -94,6 +84,8 @@ def preprocess_data_in_batches(X, y, encoder, batch_size=1000):
     # Concatenate all batches
     return np.concatenate(processed_X), np.concatenate(processed_y), vocab_size
 
+
+
 # Usage
 # Step 1: Fit the LabelEncoder on the entire dataset
 flat_X = [item for sublist in X for item in sublist]  # Flatten the list of sequences
@@ -105,8 +97,9 @@ encoder.fit(flat_X + flat_y)  # Fit the encoder on the entire dataset
 batch_size = 1000  # Adjust this based on your available RAM
 X, y, vocab_size = preprocess_data_in_batches(X, y, encoder, batch_size)
 
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
+print('done preprocess')
+
+
 
 def build_model(seq_length, vocab_size):
     model = Sequential()
@@ -118,6 +111,9 @@ def build_model(seq_length, vocab_size):
     return model
 
 model = build_model(seq_length, vocab_size)
+model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+
+print('model done')
 
 # Train the model
 model.fit(X, y, epochs=50, batch_size=64, validation_split=0.2)
