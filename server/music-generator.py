@@ -111,7 +111,8 @@ def build_model(seq_length, vocab_size):
     return model
 
 model = build_model(seq_length, vocab_size)
-model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
 
 print('model done')
 
