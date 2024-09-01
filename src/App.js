@@ -3,11 +3,13 @@ import SpriteAnimation from "./SpriteAnimation";
 import FrogDefaultSheet from "./frog-default.png";
 import FrogSingingSheet from "./frog-singing.png";
 import "./App.css";
-import GenerateRandom from "./GenerateRandom";
-import GenerateSeeded from "./GenerateSeeded";
 
 const App = () => {
   const [frogState, setFrogState] = useState("default");
+
+  function GenerateRandom() {}
+  function GenerateSeeded() {}
+
   return (
     <div>
       <h1>Ribbit Rhythm</h1>

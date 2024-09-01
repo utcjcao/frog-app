@@ -1,9 +1,6 @@
-import collections
-import datetime
-import fluidsynth
+import pickle as pkl
 import glob
 import numpy as np
-import pathlib
 import pandas as pd
 import pretty_midi
 import seaborn as sns
@@ -28,11 +25,10 @@ def midi_to_sequence(midi_file):
     midi_data = pretty_midi.PrettyMIDI(midi_file)
     notes = []
     for instrument in midi_data.instruments:
-        if not instrument.is_drum:  # Filter out drum instruments
+        if not instrument.is_drum:  
             notes.extend([note.pitch for note in instrument.notes])
     return notes
 
-# Step 2: Generate Training Sequences from Each File
 def prepare_sequences(notes, seq_length):
     sequences = []
     for i in range(len(notes) - seq_length):
@@ -41,7 +37,6 @@ def prepare_sequences(notes, seq_length):
         sequences.append((seq_in, seq_out))
     return sequences
 
-# Step 3: Process All MIDI Files and Prepare Input and Target Data
 def create_dataset(midi_files, seq_length):
     X = []
     y = []
@@ -55,13 +50,10 @@ def create_dataset(midi_files, seq_length):
 
 print('done functions')
 
-# Usage Example
-seq_length = 50  # Define the sequence length
+seq_length = 50  
 X, y = create_dataset(filenames, seq_length)
 
 print('done dataset')
-
-# Step 4: You would now proceed to build your RNN model using X and y as the training data.
 
 def preprocess_data_in_batches(X, y, encoder, batch_size=1000):
     vocab_size = len(encoder.classes_)
@@ -81,13 +73,9 @@ def preprocess_data_in_batches(X, y, encoder, batch_size=1000):
         processed_X.append(X_onehot)
         processed_y.append(y_onehot)
     
-    # Concatenate all batches
     return np.concatenate(processed_X), np.concatenate(processed_y), vocab_size
 
 
-
-# Usage
-# Step 1: Fit the LabelEncoder on the entire dataset
 flat_X = [item for sublist in X for item in sublist]  # Flatten the list of sequences
 flat_y = [item for item in y]  # Flatten y if necessary
 encoder = LabelEncoder()
@@ -116,6 +104,9 @@ model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accur
 
 print('model done')
 
-# Train the model
-model.fit(X, y, epochs=50, batch_size=64, validation_split=0.2)
+model.fit(X, y, epochs=5, batch_size=64, validation_split=0.2)
+
+file_path = '../models/test_model.h5'
+
+model.save(file_path)
 
