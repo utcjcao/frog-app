@@ -1,19 +1,40 @@
-import React from "react";
+import React, { useState } from "react";
 import SpriteAnimation from "./SpriteAnimation";
-import spriteSheet from "./frog-sheet.png";
+import FrogDefaultSheet from "./frog-default.png";
+import FrogSingingSheet from "./frog-singing.png";
 import "./App.css";
+import GenerateRandom from "./GenerateRandom";
+import GenerateSeeded from "./GenerateSeeded";
 
 const App = () => {
+  const [frogState, setFrogState] = useState("default");
   return (
     <div>
-      <h1>Sprite Sheet Animation</h1>
-      <SpriteAnimation
-        spriteSheet={spriteSheet}
-        frameWidth={20}
-        frameHeight={20}
-        frameCount={5}
-        animationSpeed={100}
-      />
+      <h1>Ribbit Rhythm</h1>
+      {frogState === "default" ? (
+        <SpriteAnimation
+          spriteSheet={FrogDefaultSheet}
+          frameWidth={500}
+          frameHeight={500}
+          frameCount={4}
+          animationSpeed={1000}
+        />
+      ) : frogState === "singing" ? (
+        <SpriteAnimation
+          spriteSheet={FrogSingingSheet}
+          frameWidth={500}
+          frameHeight={500}
+          frameCount={5}
+          animationSpeed={1000}
+        />
+      ) : (
+        <p> default </p>
+      )}
+
+      <div className="button-container">
+        <button onClick={GenerateRandom}>Generate random!</button>
+        <button onClick={GenerateSeeded}>Make your own!</button>
+      </div>
     </div>
   );
 };

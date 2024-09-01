@@ -24,7 +24,6 @@ const SpriteAnimation = ({
   return (
     <div
       style={{
-        transform: "scale(10)",
         width: `${frameWidth}px`,
         height: `${frameHeight}px`,
         backgroundImage: `url(${spriteSheet})`,
