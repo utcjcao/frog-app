@@ -14,11 +14,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout
 import load_data
 import variables
 
-load_data.load()
-filenames = glob.glob(str(variables.get_data_dir()/'**/*.mid*'))
 
-filenames = filenames[:5]
-print('done loading')
 
 # Step 1: Convert MIDI Files to Note Sequences
 def midi_to_sequence(midi_file):
@@ -48,12 +44,7 @@ def create_dataset(midi_files, seq_length):
             y.append(seq_out)
     return np.array(X), np.array(y)
 
-print('done functions')
 
-seq_length = 50  
-X, y = create_dataset(filenames, seq_length)
-
-print('done dataset')
 
 def preprocess_data_in_batches(X, y, encoder, batch_size=1000):
     vocab_size = len(encoder.classes_)
@@ -76,17 +67,6 @@ def preprocess_data_in_batches(X, y, encoder, batch_size=1000):
     return np.concatenate(processed_X), np.concatenate(processed_y), vocab_size
 
 
-flat_X = [item for sublist in X for item in sublist]  # Flatten the list of sequences
-flat_y = [item for item in y]  # Flatten y if necessary
-encoder = LabelEncoder()
-encoder.fit(flat_X + flat_y)  # Fit the encoder on the entire dataset
-
-# Step 2: Preprocess data in batches
-batch_size = 1000  # Adjust this based on your available RAM
-X, y, vocab_size = preprocess_data_in_batches(X, y, encoder, batch_size)
-
-print('done preprocess')
-
 
 
 def build_model(seq_length, vocab_size):
@@ -98,15 +78,41 @@ def build_model(seq_length, vocab_size):
     model.add(Dense(vocab_size, activation='softmax'))  # Output layer for classification
     return model
 
-model = build_model(seq_length, vocab_size)
-model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
 
-print('model done')
+def create_model():
+    load_data.load()
+    filenames = glob.glob(str(variables.get_data_dir()/'**/*.mid*'))
 
-model.fit(X, y, epochs=5, batch_size=64, validation_split=0.2)
+    filenames = filenames[:5]
+    print('done loading')
+    print('done functions')
 
-file_path = '../models/test_model.h5'
+    seq_length = 50  
+    X, y = create_dataset(filenames, seq_length)
 
-model.save(file_path)
+    print('done dataset')
+
+    flat_X = [item for sublist in X for item in sublist]  # Flatten the list of sequences
+    flat_y = [item for item in y]  # Flatten y if necessary
+    encoder = LabelEncoder()
+    encoder.fit(flat_X + flat_y)  # Fit the encoder on the entire dataset
+
+    # Step 2: Preprocess data in batches
+    batch_size = 1000  # Adjust this based on your available RAM
+    X, y, vocab_size = preprocess_data_in_batches(X, y, encoder, batch_size)
+
+    print('done preprocess')
+
+    model = build_model(seq_length, vocab_size)
+    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+
+    print('model done')
+
+    model.fit(X, y, epochs=5, batch_size=64, validation_split=0.2)
+
+    file_path = '../models/test_model.h5'
+
+    model.save(file_path)
 

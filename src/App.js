@@ -3,6 +3,7 @@ import SpriteAnimation from "./SpriteAnimation";
 import FrogDefaultSheet from "./frog-default.png";
 import FrogSingingSheet from "./frog-singing.png";
 import "./App.css";
+import MidiPlayer from "./Midiplayer";
 
 const App = () => {
   const [frogState, setFrogState] = useState("default");
