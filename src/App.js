@@ -1,15 +1,30 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import SpriteAnimation from "./SpriteAnimation";
 import FrogDefaultSheet from "./frog-default.png";
 import FrogSingingSheet from "./frog-singing.png";
 import "./App.css";
-import MidiPlayer from "./Midiplayer";
+import MidiPlayer from "./MidiPlayer";
+import { io } from "socket.io-client";
 
 const App = () => {
   const [frogState, setFrogState] = useState("default");
+  const [socket, setSocket] = useState();
 
-  function GenerateRandom() {}
-  function GenerateSeeded() {}
+  useEffect(() => {
+    const s = io("http://localhost:5000");
+    setSocket(s);
+    socket.emit("initialize");
+    return () => {
+      s.disconnect();
+    };
+  }, []);
+
+  function GenerateRandom() {
+    setFrogState("default");
+  }
+  function GenerateSeeded() {
+    setFrogState("singing");
+  }
 
   return (
     <div>

@@ -33,8 +33,8 @@ def generate_random():
     except:
         print('loading model error')
     seq_length = 50
-    vocab_size = 79  
-    sequence = [random.randint(0, 79) for i in range(seq_length)]
+    vocab_size = 128
+    sequence = [random.randint(0, 128) for i in range(seq_length)]
     generated_sequence = generate_sequence(loaded_model, sequence, seq_length, vocab_size, num_generate=200)
 
     return sequence_to_midi(generated_sequence, 'generated_music.mid')
@@ -45,7 +45,7 @@ def generate_seeded(sequence):
     except:
         print('loading model error')
     seq_length = 50
-    vocab_size = 79
+    vocab_size = 128
     generated_sequence = generate_sequence(loaded_model, sequence, seq_length, vocab_size, num_generate=200)
 
     return sequence_to_midi(generated_sequence, 'generated_music.mid')

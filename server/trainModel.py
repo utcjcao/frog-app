@@ -10,7 +10,8 @@ from tqdm import tqdm
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.utils import to_categorical
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
+from tensorflow.keras.layers import LSTM, Dense, Dropout, Activation
+from keras import activations
 import load_data
 import variables
 
@@ -66,19 +67,21 @@ def preprocess_data_in_batches(X, y, encoder, batch_size=1000):
     
     return np.concatenate(processed_X), np.concatenate(processed_y), vocab_size
 
-
-
-
 def build_model(seq_length, vocab_size):
     model = Sequential()
-    model.add(LSTM(128, input_shape=(seq_length, vocab_size), return_sequences=True))
     model.add(Dropout(0.2))
-    model.add(LSTM(128))
-    model.add(Dropout(0.2))
-    model.add(Dense(vocab_size, activation='softmax'))  # Output layer for classification
-    return model
-
-
+    model.add(LSTM(
+        512,
+        input_shape=(seq_length, vocab_size),
+        return_sequences=True
+    ))
+    model.add(Dense(256))
+    model.add(Dense(256))
+    model.add(LSTM(512, return_sequences=True))
+    model.add(Dense(256))
+    model.add(LSTM(512))
+    model.add(Dense(128, activation='softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
 def create_model():
     load_data.load()
@@ -105,8 +108,6 @@ def create_model():
     print('done preprocess')
 
     model = build_model(seq_length, vocab_size)
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
 
     print('model done')
 

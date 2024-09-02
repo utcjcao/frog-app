@@ -1,27 +1,30 @@
-from flask import Flask,
+from flask import Flask
 from flask_socketio import SocketIO
+from flask_cors import CORS
 import generateSequence
 import variables
 import trainModel
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'secret!'
-socketio = SocketIO(app)
+CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
+socketio = SocketIO(app, cors_allowed_origins="http://localhost:3000")
 
 @socketio("initialize")
 def initialize():
     if not variables.get_model_dir().exists():
         socketio.emit('loading')
         trainModel.build_model()
-        
+
 
 @socketio.io("generate-sequence") 
 def generate_sequence(data):
     sequenceType, seededSequence = data
     if sequenceType == "random":
-        generateSequence.generate_random()
+        socketio.emit('recieve-sequence', generateSequence.generate_random())
     elif sequenceType == "seeded":
-        generateSequence.generate_seeded(seededSequence)
+        socketio.emit('recieve-sequence', generateSequence.generate_seeded(seededSequence))
+        
 
-
-socketio.run(app)
+if __name__ == '__main__':
+    PORT = 5000  
+    socketio.run(app, host='localhost', port=PORT)
