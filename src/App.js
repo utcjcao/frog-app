@@ -4,6 +4,7 @@ import FrogDefaultSheet from "./frog-default.png";
 import FrogSingingSheet from "./frog-singing.png";
 import "./App.css";
 import MidiPlayer from "./MidiPlayer";
+import Keyboard from "./Keyboard";
 import { io } from "socket.io-client";
 
 const App = () => {
@@ -13,7 +14,7 @@ const App = () => {
   useEffect(() => {
     const s = io("http://localhost:5000");
     setSocket(s);
-    socket.emit("initialize");
+    s.emit("initialize");
     return () => {
       s.disconnect();
     };
@@ -29,6 +30,7 @@ const App = () => {
   return (
     <div>
       <h1>Ribbit Rhythm</h1>
+      <Keyboard></Keyboard>
       {frogState === "default" ? (
         <SpriteAnimation
           spriteSheet={FrogDefaultSheet}
