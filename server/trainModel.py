@@ -90,7 +90,7 @@ def create_model():
     print('done loading')
     print('done functions')
 
-    seq_length = 50  
+    seq_length = 25  
     X, y = create_dataset(filenames, seq_length)
 
     print('done dataset')
@@ -112,9 +112,14 @@ def create_model():
 
     model.fit(X, y, epochs=1, batch_size=64, validation_split=0.2)
 
-    file_path = '../models/test_model.keras'
+    file_path = os.path.abspath('models/test_model.keras')
 
-    model.save(file_path)
+    model.save(file_path) 
+
+import os
+
+os.makedirs('models', exist_ok=True)
 
 create_model()
+
 

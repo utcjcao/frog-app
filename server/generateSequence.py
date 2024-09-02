@@ -3,6 +3,15 @@ import pretty_midi
 from tensorflow.keras.models import load_model
 import random
 
+def notes_to_midi(notes):
+    note_to_midi = {
+        'C': 60, 'C#': 61, 'D': 62, 'D#': 63, 'E': 64, 'F': 65, 'F#': 66, 'G': 67, 'G#': 68, 'A': 69, 'A#': 70, 'B': 71,
+        'C2': 72, 'C#2': 73, 'D2': 74, 'D#2': 75, 'E2': 76, 'F2': 77, 'F#2': 78, 'G2': 79, 'G#2': 80, 'A2': 81, 'A#2': 82, 'B2': 83
+    }
+
+    midi_notes = [note_to_midi[note] for note in notes if note in note_to_midi]
+    return midi_notes
+
 def generate_sequence(model, seed_sequence, seq_length, vocab_size, num_generate=100):
     generated_sequence = list(seed_sequence)
 
@@ -29,11 +38,12 @@ def sequence_to_midi(sequence, output_file):
 
 def generate_seeded(sequence):
     try:
-        loaded_model = load_model('../models/test_model.h5')
+        loaded_model = load_model('models/test_model.keras')
     except:
         print('loading model error')
     seq_length = 50
-    vocab_size = 128
-    generated_sequence = generate_sequence(loaded_model, sequence, seq_length, vocab_size, num_generate=200)
+    vocab_size = 44
+    seeded_sequence = notes_to_midi(sequence) * 5
+    generated_sequence = generate_sequence(loaded_model, seeded_sequence, seq_length, vocab_size, num_generate=200)
 
     return sequence_to_midi(generated_sequence, 'generated_music.mid')
