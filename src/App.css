@@ -1,4 +1,18 @@
-.sprite {
-  width: 200px;  
-  height: 200px; 
+.keyboard {
+  display: flex;
+  flex-direction: row;
+  position: relative;
+  width: fit-content;
+}
+
+.key {
+  width: 40px;
+  height: 200px;
+  margin: 2px;
+  border: 1px solid black;
+  cursor: pointer;
+}
+
+.natural {
+  background-color: white;
 }

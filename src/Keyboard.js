@@ -1,7 +1,7 @@
 import React from "react";
 import * as Tone from "tone";
 
-const notes = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+const notes = ["C", "D", "E", "F", "G", "A", "B"];
 
 const Key = ({ isSharp, onClick, note }) => {
   return (
@@ -14,16 +14,16 @@ const Key = ({ isSharp, onClick, note }) => {
   );
 };
 
-const Keyboard = () => {
+const Keyboard = ({ handleNotePlay }) => {
   const synth = new Tone.Synth().toDestination();
 
   const onKeyClick = (note) => {
-    const octave = 4;
-    synth.triggerAttackRelease(`${note}${octave}`, "8n");
+    handleNotePlay(note);
+    synth.triggerAttackRelease(`${note}${4}`, "8n");
   };
 
   return (
-    <div className="Keyboard">
+    <div className="keyboard">
       {notes.map((note, index) => (
         <Key
           key={index}

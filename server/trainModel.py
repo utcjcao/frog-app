@@ -15,9 +15,6 @@ from keras import activations
 import load_data
 import variables
 
-
-
-# Step 1: Convert MIDI Files to Note Sequences
 def midi_to_sequence(midi_file):
     midi_data = pretty_midi.PrettyMIDI(midi_file)
     notes = []
@@ -80,14 +77,16 @@ def build_model(seq_length, vocab_size):
     model.add(LSTM(512, return_sequences=True))
     model.add(Dense(256))
     model.add(LSTM(512))
-    model.add(Dense(128, activation='softmax'))
+    model.add(Dense(44, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
+
+    return model
 
 def create_model():
     load_data.load()
     filenames = glob.glob(str(variables.get_data_dir()/'**/*.mid*'))
 
-    filenames = filenames[:5]
+    filenames = filenames[:1]
     print('done loading')
     print('done functions')
 
@@ -96,13 +95,13 @@ def create_model():
 
     print('done dataset')
 
-    flat_X = [item for sublist in X for item in sublist]  # Flatten the list of sequences
-    flat_y = [item for item in y]  # Flatten y if necessary
+    flat_X = [item for sublist in X for item in sublist]  
+    flat_y = [item for item in y]  
     encoder = LabelEncoder()
-    encoder.fit(flat_X + flat_y)  # Fit the encoder on the entire dataset
+    encoder.fit(flat_X + flat_y)  
 
-    # Step 2: Preprocess data in batches
-    batch_size = 1000  # Adjust this based on your available RAM
+    
+    batch_size = 1000  
     X, y, vocab_size = preprocess_data_in_batches(X, y, encoder, batch_size)
 
     print('done preprocess')
@@ -111,9 +110,11 @@ def create_model():
 
     print('model done')
 
-    model.fit(X, y, epochs=5, batch_size=64, validation_split=0.2)
+    model.fit(X, y, epochs=1, batch_size=64, validation_split=0.2)
 
-    file_path = '../models/test_model.h5'
+    file_path = '../models/test_model.keras'
 
     model.save(file_path)
+
+create_model()
 

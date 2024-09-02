@@ -6,11 +6,26 @@ import "./App.css";
 import MidiPlayer from "./MidiPlayer";
 import Keyboard from "./Keyboard";
 import { io } from "socket.io-client";
+import GenerateSeeded from "./GenerateSeeded";
 
 const App = () => {
   const [frogState, setFrogState] = useState("default");
   const [socket, setSocket] = useState();
+  const [recordedNotes, setRecordedNotes] = useState([]);
 
+  const handleNotePlay = (note) => {
+    setRecordedNotes((prevNotes) => [...prevNotes, note]);
+    if (recordedNotes.length === 5) {
+      socket.emit("generate-sequence", recordedNotes);
+      setRecordedNotes([note]);
+    }
+  };
+  useEffect(() => {
+    const handler = (sequence) => {
+      MidiPlayer(sequence);
+    };
+    socket.on("recieve-sequence");
+  }, [socket]);
   useEffect(() => {
     const s = io("http://localhost:5000");
     setSocket(s);
@@ -20,41 +35,10 @@ const App = () => {
     };
   }, []);
 
-  function GenerateRandom() {
-    setFrogState("default");
-  }
-  function GenerateSeeded() {
-    setFrogState("singing");
-  }
-
   return (
     <div>
-      <h1>Ribbit Rhythm</h1>
-      <Keyboard></Keyboard>
-      {frogState === "default" ? (
-        <SpriteAnimation
-          spriteSheet={FrogDefaultSheet}
-          frameWidth={500}
-          frameHeight={500}
-          frameCount={4}
-          animationSpeed={1000}
-        />
-      ) : frogState === "singing" ? (
-        <SpriteAnimation
-          spriteSheet={FrogSingingSheet}
-          frameWidth={500}
-          frameHeight={500}
-          frameCount={5}
-          animationSpeed={1000}
-        />
-      ) : (
-        <p> default </p>
-      )}
-
-      <div className="button-container">
-        <button onClick={GenerateRandom}>Generate random!</button>
-        <button onClick={GenerateSeeded}>Make your own!</button>
-      </div>
+      <Keyboard handleNotePlay={handleNotePlay}></Keyboard>
+      <p>{recordedNotes}</p>
     </div>
   );
 };

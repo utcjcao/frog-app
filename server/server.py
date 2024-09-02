@@ -14,15 +14,13 @@ def initialize():
     if not variables.get_model_dir().exists():
         socketio.emit('loading')
         trainModel.build_model()
+        socketio.emit('done-loading')
 
 
 @socketio.io("generate-sequence") 
 def generate_sequence(data):
-    sequenceType, seededSequence = data
-    if sequenceType == "random":
-        socketio.emit('recieve-sequence', generateSequence.generate_random())
-    elif sequenceType == "seeded":
-        socketio.emit('recieve-sequence', generateSequence.generate_seeded(seededSequence))
+    seededSequence = data
+    socketio.emit('recieve-sequence', generateSequence.generate_seeded(seededSequence))
         
 
 if __name__ == '__main__':

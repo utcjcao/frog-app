@@ -27,18 +27,6 @@ def sequence_to_midi(sequence, output_file):
     midi_data.instruments.append(piano)
     midi_data.write(output_file)
 
-def generate_random():
-    try:
-        loaded_model = load_model('../models/test_model.h5')
-    except:
-        print('loading model error')
-    seq_length = 50
-    vocab_size = 128
-    sequence = [random.randint(0, 128) for i in range(seq_length)]
-    generated_sequence = generate_sequence(loaded_model, sequence, seq_length, vocab_size, num_generate=200)
-
-    return sequence_to_midi(generated_sequence, 'generated_music.mid')
-
 def generate_seeded(sequence):
     try:
         loaded_model = load_model('../models/test_model.h5')
