@@ -14,6 +14,7 @@ from tensorflow.keras.layers import LSTM, Dense, Dropout, Activation
 from keras import activations
 import load_data
 import variables
+import os
 
 def midi_to_sequence(midi_file):
     midi_data = pretty_midi.PrettyMIDI(midi_file)
@@ -77,7 +78,7 @@ def build_model(seq_length, vocab_size):
     model.add(LSTM(512, return_sequences=True))
     model.add(Dense(256))
     model.add(LSTM(512))
-    model.add(Dense(44, activation='softmax'))
+    model.add(Dense(128, activation='softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
     return model
@@ -86,19 +87,19 @@ def create_model():
     load_data.load()
     filenames = glob.glob(str(variables.get_data_dir()/'**/*.mid*'))
 
-    filenames = filenames[:1]
+    filenames = filenames[:20]
     print('done loading')
-    print('done functions')
 
-    seq_length = 25  
+    seq_length = 50
     X, y = create_dataset(filenames, seq_length)
 
     print('done dataset')
 
     flat_X = [item for sublist in X for item in sublist]  
     flat_y = [item for item in y]  
+    all_midi_notes = list(range(128))
     encoder = LabelEncoder()
-    encoder.fit(flat_X + flat_y)  
+    encoder.fit(flat_X + flat_y + all_midi_notes)  
 
     
     batch_size = 1000  
@@ -116,10 +117,8 @@ def create_model():
 
     model.save(file_path) 
 
-import os
-
-os.makedirs('models', exist_ok=True)
-
-create_model()
+if __name__ == '__main__':
+    os.makedirs('models', exist_ok=True)
+    create_model()
 
 

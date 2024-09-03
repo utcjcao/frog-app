@@ -3,21 +3,17 @@ import * as Tone from "tone";
 
 const notes = ["C", "D", "E", "F", "G", "A", "B"];
 
-const Key = ({ isSharp, onClick, note }) => {
+const Key = ({ onClick, note }) => {
   return (
-    <div
-      className={`key ${isSharp ? "sharp" : "natural"}`}
-      onClick={() => onClick(note)}
-    >
+    <div className={`key`} onClick={() => onClick(note)}>
       {note}
     </div>
   );
 };
 
 const Keyboard = ({ handleNotePlay }) => {
-  const synth = new Tone.Synth().toDestination();
-
   const onKeyClick = (note) => {
+    const synth = new Tone.Synth().toDestination();
     handleNotePlay(note);
     synth.triggerAttackRelease(`${note}${4}`, "8n");
   };
@@ -25,12 +21,7 @@ const Keyboard = ({ handleNotePlay }) => {
   return (
     <div className="keyboard">
       {notes.map((note, index) => (
-        <Key
-          key={index}
-          note={note}
-          onClick={onKeyClick}
-          isSharp={note.includes("#")}
-        />
+        <Key key={index} note={note} onClick={onKeyClick} />
       ))}
     </div>
   );

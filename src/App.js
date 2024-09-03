@@ -9,11 +9,19 @@ import { io } from "socket.io-client";
 import GenerateSeeded from "./GenerateSeeded";
 
 const App = () => {
-  const [frogState, setFrogState] = useState("default");
   const [socket, setSocket] = useState();
   const [recordedNotes, setRecordedNotes] = useState([]);
 
+  useEffect(() => {
+    const s = io("http://localhost:5000");
+    setSocket(s);
+    return () => {
+      s.disconnect();
+    };
+  }, []);
+
   const handleNotePlay = (note) => {
+    if (socket == null) return;
     setRecordedNotes((prevNotes) => [...prevNotes, note]);
     if (recordedNotes.length === 5) {
       socket.emit("generate-sequence", recordedNotes);
@@ -21,19 +29,15 @@ const App = () => {
     }
   };
   useEffect(() => {
+    if (socket == null) return;
     const handler = (sequence) => {
       MidiPlayer(sequence);
     };
-    socket.on("recieve-sequence");
-  }, [socket]);
-  useEffect(() => {
-    const s = io("http://localhost:5000");
-    setSocket(s);
-    s.emit("initialize");
+    socket.on("recieve-sequence", handler);
     return () => {
-      s.disconnect();
+      socket.off("recieve-sequence", handler);
     };
-  }, []);
+  }, [socket]);
 
   return (
     <div>

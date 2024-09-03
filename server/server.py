@@ -9,7 +9,7 @@ app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "http://localhost:3000"}})
 socketio = SocketIO(app, cors_allowed_origins="http://localhost:3000")
 
-@socketio.io("generate-sequence") 
+@socketio.on("generate-sequence") 
 def generate_sequence(data):
     seededSequence = data
     socketio.emit('recieve-sequence', generateSequence.generate_seeded(seededSequence))

@@ -1,12 +1,13 @@
 import numpy as np
 import pretty_midi
 from tensorflow.keras.models import load_model
-import random
+import numpy as np
+from tensorflow.keras.utils import to_categorical
 
 def notes_to_midi(notes):
     note_to_midi = {
-        'C': 60, 'C#': 61, 'D': 62, 'D#': 63, 'E': 64, 'F': 65, 'F#': 66, 'G': 67, 'G#': 68, 'A': 69, 'A#': 70, 'B': 71,
-        'C2': 72, 'C#2': 73, 'D2': 74, 'D#2': 75, 'E2': 76, 'F2': 77, 'F#2': 78, 'G2': 79, 'G#2': 80, 'A2': 81, 'A#2': 82, 'B2': 83
+        'C': 60, 'D': 62, 'E': 64, 'F': 65, 'G': 67, 'A': 69, 'B': 71,
+        'C2': 72, 'D2': 74, 'E2': 76, 'F2': 77, 'G2': 79, 'A2': 81, 'B2': 83
     }
 
     midi_notes = [note_to_midi[note] for note in notes if note in note_to_midi]
@@ -19,7 +20,8 @@ def generate_sequence(model, seed_sequence, seq_length, vocab_size, num_generate
         input_sequence = np.array(generated_sequence[-seq_length:]).reshape(1, seq_length, vocab_size)
         
         predictions = model.predict(input_sequence, verbose=0)
-        next_note = np.argmax(predictions[0, -1, :])
+        print(predictions.shape)
+        next_note = np.argmax(predictions[0])
         
         generated_sequence.append(next_note)
     
@@ -42,8 +44,13 @@ def generate_seeded(sequence):
     except:
         print('loading model error')
     seq_length = 50
-    vocab_size = 44
-    seeded_sequence = notes_to_midi(sequence) * 5
-    generated_sequence = generate_sequence(loaded_model, seeded_sequence, seq_length, vocab_size, num_generate=200)
+    vocab_size = 128
+    print(sequence)
+    print(notes_to_midi(sequence))
+    seeded_sequence = notes_to_midi(sequence) * 10
+    encoded_notes = to_categorical(seeded_sequence, num_classes=vocab_size)
+    input_sequence = encoded_notes.reshape(1, seq_length, vocab_size)
+    
+    generated_sequence = generate_sequence(loaded_model, input_sequence, seq_length, vocab_size, num_generate=200)
 
     return sequence_to_midi(generated_sequence, 'generated_music.mid')
