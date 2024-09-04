@@ -4,6 +4,7 @@ from tensorflow.keras.models import load_model
 import numpy as np
 import pandas as pd
 import pretty_midi
+from trainModel import mse_with_positive_pressure 
 
 key_order = ['pitch', 'step', 'duration']
 
@@ -91,13 +92,14 @@ def sequence_to_notes(sequence):
         'step': [],
         'duration': []
     }
-    for note in sequence:
-        notes['pitch'].append(note_to_pitch(note))
-        notes['start'].append(start)
-        notes['end'].append(end)
-        notes['step'].append(2)
-        notes['duration'].append(end - start)
-        start, end = start + 2, end + 2
+    for i in range(5):
+        for note in sequence:
+            notes['pitch'].append(note_to_pitch(note))
+            notes['start'].append(start)
+            notes['end'].append(end)
+            notes['step'].append(2)
+            notes['duration'].append(end - start)
+            start, end = start + 2, end + 2
     return np.stack([notes[key] for key in key_order], axis=1)
 
 
@@ -115,16 +117,12 @@ def generate_seeded(sequence, num_predictions=50):
     """
     seq_length = 25
     vocab_size = 128
-    try:
-        loaded_model = load_model('models/test_model.keras')
-    except:
-        print('loading model error')
-
+    model = load_model('models/test_model.keras', custom_objects={'mse_with_positive_pressure': mse_with_positive_pressure})
     input_notes = (sequence_to_notes(sequence)[:seq_length] / np.array([vocab_size, 1, 1]))
     generated_notes = []
     prev_start = 0
     for _ in range(num_predictions):
-        pitch, step, duration = predict_next_note(input_notes, loaded_model, temperature=2)
+        pitch, step, duration = predict_next_note(input_notes, model, temperature=2)
         start = prev_start + step
         end = start + duration
         input_note = (pitch, step, duration)
@@ -136,4 +134,4 @@ def generate_seeded(sequence, num_predictions=50):
     generated_notes = pd.DataFrame(
     generated_notes, columns=(*key_order, 'start', 'end'))
 
-    return notes_to_midi(generated_notes)
+    return notes_to_midi(generated_notes, out_file = 'example.midi', instrument_name="Acoustic Grand Piano")
