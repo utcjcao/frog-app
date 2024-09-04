@@ -1,56 +1,139 @@
 import numpy as np
-import pretty_midi
+import tensorflow as tf
 from tensorflow.keras.models import load_model
 import numpy as np
-from tensorflow.keras.utils import to_categorical
+import pandas as pd
+import pretty_midi
 
-def notes_to_midi(notes):
-    note_to_midi = {
-        'C': 60, 'D': 62, 'E': 64, 'F': 65, 'G': 67, 'A': 69, 'B': 71,
-        'C2': 72, 'D2': 74, 'E2': 76, 'F2': 77, 'G2': 79, 'A2': 81, 'B2': 83
+key_order = ['pitch', 'step', 'duration']
+
+def notes_to_midi(
+    notes: pd.DataFrame,
+    out_file: str, 
+    instrument_name: str,
+    velocity: int = 100,  # note loudness
+    ) -> pretty_midi.PrettyMIDI:
+
+    pm = pretty_midi.PrettyMIDI()
+    instrument = pretty_midi.Instrument(
+        program=pretty_midi.instrument_name_to_program(
+            instrument_name))
+
+    prev_start = 0
+    for i, note in notes.iterrows():
+        start = float(prev_start + note['step'])
+        end = float(start + note['duration'])
+        note = pretty_midi.Note(
+            velocity=velocity,
+            pitch=int(note['pitch']),
+            start=start,
+            end=end,
+        )
+        instrument.notes.append(note)
+        prev_start = start
+
+    pm.instruments.append(instrument)
+    pm.write(out_file)
+    return pm
+
+def predict_next_note(
+    notes: np.ndarray, 
+    model: tf.keras.Model, 
+    temperature: float = 1.0) -> tuple[int, float, float]:
+    """Generates a note as a tuple of (pitch, step, duration), using a trained sequence model."""
+
+    assert temperature > 0
+
+    # Add batch dimension
+    inputs = tf.expand_dims(notes, 0)
+
+    predictions = model.predict(inputs)
+    pitch_logits = predictions['pitch']
+    step = predictions['step']
+    duration = predictions['duration']
+
+    pitch_logits /= temperature
+    pitch = tf.random.categorical(pitch_logits, num_samples=1)
+    pitch = tf.squeeze(pitch, axis=-1)
+    duration = tf.squeeze(duration, axis=-1)
+    step = tf.squeeze(step, axis=-1)
+
+    # `step` and `duration` values should be non-negative
+    step = tf.maximum(0, step)
+    duration = tf.maximum(0, duration)
+
+    return int(pitch), float(step), float(duration)
+
+def note_to_pitch(note):
+    note_map = {
+        'C': 0, 
+        'D': 2, 
+        'E': 4,
+        'F': 5, 
+        'G': 7, 
+        'A': 9, 
+        'B': 11
     }
-
-    midi_notes = [note_to_midi[note] for note in notes if note in note_to_midi]
-    return midi_notes
-
-def generate_sequence(model, seed_sequence, seq_length, vocab_size, num_generate=100):
-    generated_sequence = list(seed_sequence)
-
-    for _ in range(num_generate):
-        input_sequence = np.array(generated_sequence[-seq_length:]).reshape(1, seq_length, vocab_size)
-        
-        predictions = model.predict(input_sequence, verbose=0)
-        print(predictions.shape)
-        next_note = np.argmax(predictions[0])
-        
-        generated_sequence.append(next_note)
     
-    return generated_sequence
-
-def sequence_to_midi(sequence, output_file):
-    midi_data = pretty_midi.PrettyMIDI()
-    piano = pretty_midi.Instrument(program=0)
-
-    for i, note_number in enumerate(sequence):
-        note = pretty_midi.Note(velocity=100, pitch=note_number, start=i * 0.5, end=(i + 1) * 0.5)
-        piano.notes.append(note)
+    note_name = note[:-1]
+    octave = int(note[-1])
     
-    midi_data.instruments.append(piano)
-    midi_data.write(output_file)
+    pitch = note_map[note_name] + (octave + 1) * 12
+    
+    return pitch
 
-def generate_seeded(sequence):
+def sequence_to_notes(sequence):
+    start, end = 0, 2
+    notes = {
+        'pitch': [],
+        'start': [],
+        'end': [],
+        'step': [],
+        'duration': []
+    }
+    for note in sequence:
+        notes['pitch'].append(note_to_pitch(note))
+        notes['start'].append(start)
+        notes['end'].append(end)
+        notes['step'].append(2)
+        notes['duration'].append(end - start)
+        start, end = start + 2, end + 2
+    return np.stack([notes[key] for key in key_order], axis=1)
+
+
+
+def generate_seeded(sequence, num_predictions=50):
+    """
+    Generates a midi file based on a seeded sequence
+
+    Parameters:
+    sequence (string list): List of characters
+    num_predictions (int): number of predicted notes
+
+    Returns:
+    generated_midi: midi file of generated music
+    """
+    seq_length = 25
+    vocab_size = 128
     try:
         loaded_model = load_model('models/test_model.keras')
     except:
         print('loading model error')
-    seq_length = 50
-    vocab_size = 128
-    print(sequence)
-    print(notes_to_midi(sequence))
-    seeded_sequence = notes_to_midi(sequence) * 10
-    encoded_notes = to_categorical(seeded_sequence, num_classes=vocab_size)
-    input_sequence = encoded_notes.reshape(1, seq_length, vocab_size)
-    
-    generated_sequence = generate_sequence(loaded_model, input_sequence, seq_length, vocab_size, num_generate=200)
 
-    return sequence_to_midi(generated_sequence, 'generated_music.mid')
+    input_notes = (sequence_to_notes(sequence)[:seq_length] / np.array([vocab_size, 1, 1]))
+    generated_notes = []
+    prev_start = 0
+    for _ in range(num_predictions):
+        pitch, step, duration = predict_next_note(input_notes, loaded_model, temperature=2)
+        start = prev_start + step
+        end = start + duration
+        input_note = (pitch, step, duration)
+        generated_notes.append((*input_note, start, end))
+        input_notes = np.delete(input_notes, 0, axis=0)
+        input_notes = np.append(input_notes, np.expand_dims(input_note, 0), axis=0)
+        prev_start = start
+
+    generated_notes = pd.DataFrame(
+    generated_notes, columns=(*key_order, 'start', 'end'))
+
+    return notes_to_midi(generated_notes)

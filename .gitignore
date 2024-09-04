@@ -6,6 +6,7 @@
 .pnp.js
 .venv
 data
+/server/training_checkpoints
 
 # testing
 /coverage
