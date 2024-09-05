@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import SpriteAnimation from "./SpriteAnimation";
-import FrogDefaultSheet from "./frog-default.png";
-import FrogSingingSheet from "./frog-singing.png";
+import FrogDefaultSheet from "./sprite-sheets/frog-default.png";
+import FrogSingingSheet from "./sprite-sheets/frog-singing.png";
 import "./App.css";
 import MidiPlayer from "./MidiPlayer";
 import Keyboard from "./Keyboard";
@@ -30,8 +30,9 @@ const App = () => {
   };
   useEffect(() => {
     if (socket == null) return;
-    const handler = (sequence) => {
-      MidiPlayer(sequence);
+    const handler = (sequence_number) => {
+      let filepath = `../server/music/example_${sequence_number}.midi`;
+      MidiPlayer(filepath);
     };
     socket.on("recieve-sequence", handler);
     return () => {

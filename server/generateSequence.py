@@ -35,7 +35,6 @@ def notes_to_midi(
 
     pm.instruments.append(instrument)
     pm.write(out_file)
-    return pm
 
 def predict_next_note(
     notes: np.ndarray, 
@@ -104,12 +103,13 @@ def sequence_to_notes(sequence):
 
 
 
-def generate_seeded(sequence, num_predictions=50):
+def generate_seeded(sequence, sequence_number, num_predictions=50):
     """
     Generates a midi file based on a seeded sequence
 
     Parameters:
     sequence (string list): List of characters
+    sequence_number (int): id of sequence
     num_predictions (int): number of predicted notes
 
     Returns:
@@ -133,5 +133,4 @@ def generate_seeded(sequence, num_predictions=50):
 
     generated_notes = pd.DataFrame(
     generated_notes, columns=(*key_order, 'start', 'end'))
-
-    return notes_to_midi(generated_notes, out_file = 'example.midi', instrument_name="Acoustic Grand Piano")
+    notes_to_midi(generated_notes, out_file = 'music/example_{sequence_number}.midi', instrument_name="Shakuhachi")
