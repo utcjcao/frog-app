@@ -158,7 +158,7 @@ def build_model(train_ds, seq_length):
 def create_model():
     load_data.load()
     filenames = glob.glob(str(variables.get_data_dir()/'**/*.mid*'))
-    dataset = create_dataset(filenames, 30)
+    dataset = create_dataset(filenames, 500)
     model = build_model(dataset, 25)
     return model
 
