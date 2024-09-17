@@ -1,26 +1,50 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
+import { Midi } from "@tonejs/midi";
 import * as Tone from "tone";
 
 const MidiPlayer = ({ midiURL }) => {
+  const [midi, setMidi] = useState(null);
+
   useEffect(() => {
-    const loadAndPlayMidi = async () => {
+    const loadMidi = async () => {
       try {
-        const midi = await Tone.Midi.fromUrl(midiURL);
+        const response = await fetch(midiURL);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        const midiData = new Midi(arrayBuffer);
+        setMidi(midiData);
+      } catch (error) {
+        console.error("Error loading MIDI file:", error);
+      }
+    };
+    loadMidi();
+  }, [midiURL]);
 
-        const synth = new Tone.PolySynth().toDestination();
+  const playMidi = async () => {
+    if (midi) {
+      const synth = new Tone.Synth().toDestination();
 
-        midi.tracks.forEach((track) => {
-          track.notes.forEach((note) =>
-            synth.triggerAttackRelease(note.name, note.duration, note.time)
+      midi.tracks.forEach((track) => {
+        track.notes.forEach((note) => {
+          synth.triggerAttackRelease(
+            note.name,
+            note.duration,
+            note.time,
+            note.velocity
           );
         });
-      } catch (error) {
-        console.error("Error loading or playing the MIDI file:", error);
-      }
+      });
+
       Tone.Transport.start();
-    };
-    loadAndPlayMidi();
-  }, [midiURL]);
+    }
+  };
+  return (
+    <div>
+      <button onClick={playMidi}>Play MIDI</button>
+    </div>
+  );
 };
 
 export default MidiPlayer;

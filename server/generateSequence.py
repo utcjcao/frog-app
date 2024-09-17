@@ -133,4 +133,4 @@ def generate_seeded(sequence, sequence_number, num_predictions=50):
 
     generated_notes = pd.DataFrame(
     generated_notes, columns=(*key_order, 'start', 'end'))
-    notes_to_midi(generated_notes, out_file = 'music/example_{sequence_number}.midi', instrument_name="Shakuhachi")
+    notes_to_midi(generated_notes, out_file = f'music/example_{sequence_number}.midi', instrument_name="Shakuhachi")

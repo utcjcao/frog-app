@@ -7,6 +7,7 @@
 .venv
 data
 /server/training_checkpoints
+/server/music
 
 # testing
 /coverage

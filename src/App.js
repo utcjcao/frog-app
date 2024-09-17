@@ -11,6 +11,8 @@ import GenerateSeeded from "./GenerateSeeded";
 const App = () => {
   const [socket, setSocket] = useState();
   const [recordedNotes, setRecordedNotes] = useState([]);
+  const [midiPlayerOn, setMidiPlayerState] = useState(false);
+  const [filePath, setFilePath] = useState("../server/music/example.midi");
 
   useEffect(() => {
     const s = io("http://localhost:5000");
@@ -32,7 +34,8 @@ const App = () => {
     if (socket == null) return;
     const handler = (sequence_number) => {
       let filepath = `../server/music/example_${sequence_number}.midi`;
-      MidiPlayer(filepath);
+      setFilePath(filePath);
+      setMidiPlayerState(true);
     };
     socket.on("recieve-sequence", handler);
     return () => {
@@ -44,6 +47,7 @@ const App = () => {
     <div>
       <Keyboard handleNotePlay={handleNotePlay}></Keyboard>
       <p>{recordedNotes}</p>
+      <MidiPlayer filePath={filePath}></MidiPlayer>
     </div>
   );
 };
