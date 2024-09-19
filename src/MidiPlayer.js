@@ -6,13 +6,11 @@ const MidiPlayer = ({ midiURL }) => {
   const [midi, setMidi] = useState(null);
 
   useEffect(() => {
-    const loadMidi = async () => {
+    const loadMidi = async (midiURL) => {
       try {
-        const response = await fetch(midiURL);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const arrayBuffer = await response.arrayBuffer();
+        // const rawData = await fetch(`/music/${midiURL}`);
+        const rawData = await fetch(`/music/example_0.midi`);
+        const arrayBuffer = await rawData.arrayBuffer();
         const midiData = new Midi(arrayBuffer);
         setMidi(midiData);
       } catch (error) {
@@ -24,20 +22,29 @@ const MidiPlayer = ({ midiURL }) => {
 
   const playMidi = async () => {
     if (midi) {
-      const synth = new Tone.Synth().toDestination();
+      if (!midi) return;
+      console.log("test");
 
-      midi.tracks.forEach((track) => {
+      // Start Tone.js context
+      await Tone.start();
+
+      // Create Tone.js instruments
+      const synths = midi.tracks.map(() =>
+        new Tone.PolySynth(Tone.Synth, {
+          maxPolyphony: 100111111,
+        }).toDestination()
+      );
+
+      // Schedule notes to be played
+      midi.tracks.forEach((track, trackIndex) => {
         track.notes.forEach((note) => {
-          synth.triggerAttackRelease(
+          synths[trackIndex].triggerAttackRelease(
             note.name,
             note.duration,
-            note.time,
-            note.velocity
+            note.time
           );
         });
       });
-
-      Tone.Transport.start();
     }
   };
   return (

@@ -11,7 +11,7 @@ import GenerateSeeded from "./GenerateSeeded";
 const App = () => {
   const [socket, setSocket] = useState();
   const [recordedNotes, setRecordedNotes] = useState([]);
-  const [midiPlayerOn, setMidiPlayerState] = useState(false);
+  const [isLoading, setLoading] = useState(false);
   const [filePath, setFilePath] = useState("../server/music/example.midi");
 
   useEffect(() => {
@@ -28,14 +28,15 @@ const App = () => {
     if (recordedNotes.length === 5) {
       socket.emit("generate-sequence", recordedNotes);
       setRecordedNotes([note]);
+      setLoading(true);
     }
   };
   useEffect(() => {
     if (socket == null) return;
     const handler = (sequence_number) => {
-      let filepath = `../server/music/example_${sequence_number}.midi`;
-      setFilePath(filePath);
-      setMidiPlayerState(true);
+      let filepath = `example_${sequence_number}.midi`;
+      setFilePath(filepath);
+      setLoading(false);
     };
     socket.on("recieve-sequence", handler);
     return () => {
@@ -45,7 +46,11 @@ const App = () => {
 
   return (
     <div>
-      <Keyboard handleNotePlay={handleNotePlay}></Keyboard>
+      {isLoading ? (
+        <p>loading!</p>
+      ) : (
+        <Keyboard handleNotePlay={handleNotePlay}></Keyboard>
+      )}
       <p>{recordedNotes}</p>
       <MidiPlayer filePath={filePath}></MidiPlayer>
     </div>

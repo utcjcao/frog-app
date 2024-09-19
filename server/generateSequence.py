@@ -101,11 +101,9 @@ def sequence_to_notes(sequence):
             start, end = start + 2, end + 2
     return np.stack([notes[key] for key in key_order], axis=1)
 
-
-
 def generate_seeded(sequence, sequence_number, num_predictions=50):
     """
-    Generates a midi file based on a seeded sequence
+    Generates a midi file based on a seeded sequence with monophonic output (one note at a time).
 
     Parameters:
     sequence (string list): List of characters
@@ -118,19 +116,32 @@ def generate_seeded(sequence, sequence_number, num_predictions=50):
     seq_length = 25
     vocab_size = 128
     model = load_model('models/test_model.keras', custom_objects={'mse_with_positive_pressure': mse_with_positive_pressure})
+
     input_notes = (sequence_to_notes(sequence)[:seq_length] / np.array([vocab_size, 1, 1]))
     generated_notes = []
-    prev_start = 0
+    prev_end = 0  # Track the end time of the last note
+
     for _ in range(num_predictions):
         pitch, step, duration = predict_next_note(input_notes, model, temperature=2)
-        start = prev_start + step
+        
+        # Ensure that the new note starts after the previous note ends
+        start = max(prev_end, prev_end + step)
         end = start + duration
+
+        # Add the new note to the generated notes
+        generated_notes.append((pitch, step, duration, start, end))
+        
+        # Update the input notes for the next prediction
         input_note = (pitch, step, duration)
-        generated_notes.append((*input_note, start, end))
         input_notes = np.delete(input_notes, 0, axis=0)
         input_notes = np.append(input_notes, np.expand_dims(input_note, 0), axis=0)
-        prev_start = start
+        prev_end = end  # Update prev_end to the end of the current note
 
-    generated_notes = pd.DataFrame(
-    generated_notes, columns=(*key_order, 'start', 'end'))
-    notes_to_midi(generated_notes, out_file = f'music/example_{sequence_number}.midi', instrument_name="Shakuhachi")
+    # Convert the generated notes to a DataFrame
+    generated_notes_df = pd.DataFrame(
+        generated_notes, columns=(*key_order, 'start', 'end'))
+    
+    # Convert the DataFrame to a MIDI file
+    notes_to_midi(generated_notes_df, out_file=f'../public/music/example_{sequence_number}.midi', instrument_name="Shakuhachi")
+    
+    return f'../public/music/example_{sequence_number}.midi'
