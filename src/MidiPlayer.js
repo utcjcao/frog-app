@@ -2,50 +2,21 @@ import React, { useEffect, useState } from "react";
 import { Midi } from "@tonejs/midi";
 import * as Tone from "tone";
 
-const MidiPlayer = ({ midiURL }) => {
-  const [midi, setMidi] = useState(null);
-
-  useEffect(() => {
-    const loadMidi = async (midiURL) => {
-      try {
-        // const rawData = await fetch(`/music/${midiURL}`);
-        const rawData = await fetch(`/music/example_0.midi`);
-        const arrayBuffer = await rawData.arrayBuffer();
-        const midiData = new Midi(arrayBuffer);
-        setMidi(midiData);
-      } catch (error) {
-        console.error("Error loading MIDI file:", error);
-      }
-    };
-    loadMidi();
-  }, [midiURL]);
-
+const MidiPlayer = ({ notes }) => {
   const playMidi = async () => {
-    if (midi) {
-      if (!midi) return;
-      console.log("test");
-
-      // Start Tone.js context
-      await Tone.start();
-
-      // Create Tone.js instruments
-      const synths = midi.tracks.map(() =>
-        new Tone.PolySynth(Tone.Synth, {
-          maxPolyphony: 100111111,
-        }).toDestination()
+    await Tone.start();
+    const synth = new Tone.Synth().toDestination();
+    notes.forEach((note) => {
+      const { pitch, start, duration } = note;
+      synth.triggerAttackRelease(
+        Tone.Frequency(pitch, "midi").toFrequency(), // Convert MIDI pitch to frequency
+        duration,
+        Tone.Transport.now() + start // Schedule start time in Tone.js Transport
       );
+    });
 
-      // Schedule notes to be played
-      midi.tracks.forEach((track, trackIndex) => {
-        track.notes.forEach((note) => {
-          synths[trackIndex].triggerAttackRelease(
-            note.name,
-            note.duration,
-            note.time
-          );
-        });
-      });
-    }
+    // Start the transport
+    Tone.Transport.start();
   };
   return (
     <div>

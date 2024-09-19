@@ -12,7 +12,7 @@ const App = () => {
   const [socket, setSocket] = useState();
   const [recordedNotes, setRecordedNotes] = useState([]);
   const [isLoading, setLoading] = useState(false);
-  const [filePath, setFilePath] = useState("../server/music/example.midi");
+  const [notes, setNotes] = useState([]);
 
   useEffect(() => {
     const s = io("http://localhost:5000");
@@ -33,9 +33,8 @@ const App = () => {
   };
   useEffect(() => {
     if (socket == null) return;
-    const handler = (sequence_number) => {
-      let filepath = `example_${sequence_number}.midi`;
-      setFilePath(filepath);
+    const handler = (data) => {
+      setNotes(data);
       setLoading(false);
     };
     socket.on("recieve-sequence", handler);
@@ -52,7 +51,7 @@ const App = () => {
         <Keyboard handleNotePlay={handleNotePlay}></Keyboard>
       )}
       <p>{recordedNotes}</p>
-      <MidiPlayer filePath={filePath}></MidiPlayer>
+      <MidiPlayer notes={notes}></MidiPlayer>
     </div>
   );
 };

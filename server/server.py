@@ -16,9 +16,9 @@ sequence_number = 0
 @socketio.on("generate-sequence") 
 def generate_sequence(data):
     global sequence_number
-    seededSequence = data
-    generateSequence.generate_seeded(seededSequence, sequence_number=sequence_number)
-    socketio.emit('recieve-sequence', sequence_number)
+
+    generated_notes_dict = generateSequence.generate_seeded(data, num_predictions=50)
+    socketio.emit('recieve-sequence', generated_notes_dict)
     sequence_number += 1
         
 

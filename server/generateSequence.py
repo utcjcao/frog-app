@@ -101,18 +101,7 @@ def sequence_to_notes(sequence):
             start, end = start + 2, end + 2
     return np.stack([notes[key] for key in key_order], axis=1)
 
-def generate_seeded(sequence, sequence_number, num_predictions=50):
-    """
-    Generates a midi file based on a seeded sequence with monophonic output (one note at a time).
-
-    Parameters:
-    sequence (string list): List of characters
-    sequence_number (int): id of sequence
-    num_predictions (int): number of predicted notes
-
-    Returns:
-    generated_midi: midi file of generated music
-    """
+def generate_seeded(sequence, num_predictions=50):
     seq_length = 25
     vocab_size = 128
     model = load_model('models/test_model.keras', custom_objects={'mse_with_positive_pressure': mse_with_positive_pressure})
@@ -142,6 +131,7 @@ def generate_seeded(sequence, sequence_number, num_predictions=50):
         generated_notes, columns=(*key_order, 'start', 'end'))
     
     # Convert the DataFrame to a MIDI file
-    notes_to_midi(generated_notes_df, out_file=f'../public/music/example_{sequence_number}.midi', instrument_name="Shakuhachi")
+    # notes_to_midi(generated_notes_df, out_file=f'../public/music/example_{sequence_number}.midi', instrument_name="Shakuhachi")
     
-    return f'../public/music/example_{sequence_number}.midi'
+    # return f'../public/music/example_{sequence_number}.midi'
+    return generated_notes_df.to_dict(orient='records')
