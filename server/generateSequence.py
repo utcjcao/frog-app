@@ -91,6 +91,7 @@ def sequence_to_notes(sequence):
         'step': [],
         'duration': []
     }
+    counter = 0
     for i in range(5):
         for note in sequence:
             notes['pitch'].append(note_to_pitch(note))
@@ -99,6 +100,9 @@ def sequence_to_notes(sequence):
             notes['step'].append(2)
             notes['duration'].append(end - start)
             start, end = start + 2, end + 2
+            counter += 1
+        if counter == 25: 
+            break
     return np.stack([notes[key] for key in key_order], axis=1)
 
 def generate_seeded(sequence, num_predictions=50):
@@ -113,7 +117,6 @@ def generate_seeded(sequence, num_predictions=50):
     for _ in range(num_predictions):
         pitch, step, duration = predict_next_note(input_notes, model, temperature=2)
         
-        # Ensure that the new note starts after the previous note ends
         start = max(prev_end, prev_end + step)
         end = start + duration
 

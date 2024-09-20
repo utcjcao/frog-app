@@ -13,6 +13,7 @@ const App = () => {
   const [recordedNotes, setRecordedNotes] = useState([]);
   const [isLoading, setLoading] = useState(false);
   const [notes, setNotes] = useState([]);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const s = io("http://localhost:5000");
@@ -22,14 +23,23 @@ const App = () => {
     };
   }, []);
 
+  const handleLearn = () => {
+    if (recordedNotes.length >= 5 && recordedNotes.length <= 25) {
+      socket.emit("generate-sequence", recordedNotes);
+      setRecordedNotes([]);
+      setLoading(true);
+      setError("");
+    } else if (recordedNotes.length <= 5) {
+      setError("too short!");
+    } else {
+      setError("too long!");
+    }
+  };
+
   const handleNotePlay = (note) => {
     if (socket == null) return;
+
     setRecordedNotes((prevNotes) => [...prevNotes, note]);
-    if (recordedNotes.length === 5) {
-      socket.emit("generate-sequence", recordedNotes);
-      setRecordedNotes([note]);
-      setLoading(true);
-    }
   };
   useEffect(() => {
     if (socket == null) return;
@@ -51,6 +61,8 @@ const App = () => {
         <Keyboard handleNotePlay={handleNotePlay}></Keyboard>
       )}
       <p>{recordedNotes}</p>
+      <p>{error}</p>
+      <button onClick={handleLearn}>Learn!</button>
       <MidiPlayer notes={notes}></MidiPlayer>
     </div>
   );
