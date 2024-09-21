@@ -75,20 +75,16 @@ def create_sequences(dataset: tf.data.Dataset, seq_length: int, vocab_size = 128
     """Returns TF Dataset of sequence and label examples."""
     seq_length = seq_length+1
 
-    # Take 1 extra for the labels
     windows = dataset.window(seq_length, shift=1, stride=1,
                                 drop_remainder=True)
 
-    # `flat_map` flattens the" dataset of datasets" into a dataset of tensors
     flatten = lambda x: x.batch(seq_length, drop_remainder=True)
     sequences = windows.flat_map(flatten)
 
-    # Normalize note pitch
     def scale_pitch(x):
         x = x/[vocab_size,1.0,1.0]
         return x
 
-    # Split the labels
     def split_labels(sequences):
         inputs = sequences[:-1]
         labels_dense = sequences[-1]
@@ -98,8 +94,18 @@ def create_sequences(dataset: tf.data.Dataset, seq_length: int, vocab_size = 128
 
     return sequences.map(split_labels, num_parallel_calls=tf.data.AUTOTUNE)
 
-def preprocess_data_in_batches(X, y, encoder, batch_size=1000):
-    return
+def combined_loss(y_true: tf.Tensor, y_pred: tf.Tensor):
+    primary_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)(y_true, y_pred)
+    probabilities = tf.nn.softmax(y_pred)
+    predicted_note = tf.argmax(probabilities, axis=-1)
+
+    penalty = tf.reduce_sum(tf.maximum(predicted_note - 88, 0.0))
+
+    penalty_weight = 0.1
+
+    total_loss = primary_loss + penalty_weight * penalty
+    
+    return total_loss
 
 def build_model(train_ds, seq_length):
     input_shape = (seq_length, 3)
@@ -119,8 +125,7 @@ def build_model(train_ds, seq_length):
     model = tf.keras.Model(inputs, outputs)
 
     loss = {
-        'pitch': tf.keras.losses.SparseCategoricalCrossentropy(
-            from_logits=True),
+        'pitch': combined_loss,
         'step': mse_with_positive_pressure,
         'duration': mse_with_positive_pressure,
     }
@@ -165,7 +170,7 @@ def create_model():
 if __name__ == '__main__':
     os.makedirs('models', exist_ok=True)
     model = create_model()
-    file_path = os.path.abspath('models/test_model.keras')
+    file_path = os.path.abspath('models/new_test_model.keras')
     model.save(file_path) 
     
 
