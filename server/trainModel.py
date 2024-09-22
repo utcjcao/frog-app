@@ -99,12 +99,12 @@ def combined_loss(y_true: tf.Tensor, y_pred: tf.Tensor):
     probabilities = tf.nn.softmax(y_pred)
     predicted_note = tf.argmax(probabilities, axis=-1)
 
-    penalty = tf.reduce_sum(tf.maximum(predicted_note - 88, 0.0))
+    penalty = tf.reduce_sum(tf.maximum(predicted_note - 88, 0))
 
     penalty_weight = 0.1
 
-    total_loss = primary_loss + penalty_weight * penalty
-    
+    total_loss = primary_loss + tf.cast(penalty_weight, tf.float32) * tf.cast(penalty, tf.float32)
+
     return total_loss
 
 def build_model(train_ds, seq_length):
