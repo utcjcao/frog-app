@@ -20,20 +20,13 @@ key_order = ['pitch', 'step', 'duration']
 def midi_to_notes(midi_file: str) -> pd.DataFrame:
   pm = pretty_midi.PrettyMIDI(midi_file)
   instrument = pm.instruments[0]
-  notes = collections.defaultdict(list)
-
-  sorted_notes = sorted(instrument.notes, key=lambda note: note.start)
-  prev_start = sorted_notes[0].start
-
-  for note in sorted_notes:
-    start = note.start
-    end = note.end
+  notes = {'pitch': [], 'start': [], 'end': [], 'step': [], 'duration': []}
+  for note in instrument.notes:
     notes['pitch'].append(note.pitch)
-    notes['start'].append(start)
-    notes['end'].append(end)
-    notes['step'].append(start - prev_start)
-    notes['duration'].append(end - start)
-    prev_start = start
+    notes['start'].append(note.start)
+    notes['end'].append(note.end)
+    notes['step'].append(note.end - note.start)
+    notes['duration'].append(note.end - note.start)
 
   return pd.DataFrame({name: np.array(value) for name, value in notes.items()})
 
@@ -42,22 +35,21 @@ def create_dataset(filenames, num_files):
     batch_size, seq_length = 64, 25
 
     all_notes = []
-    for f in filenames[:num_files]:
-        notes = midi_to_notes(f)
+    counter = 0
+    while counter < num_files:
+        notes = midi_to_notes(filenames[counter])
         all_notes.append(notes)
+        counter += 1
 
     all_notes = pd.concat(all_notes)
-
-    n_notes = len(all_notes)
-
-    
+ 
     train_notes = np.stack([all_notes[key] for key in key_order], axis=1)
 
     notes_ds = tf.data.Dataset.from_tensor_slices(train_notes)
 
     seq_ds = create_sequences(notes_ds, seq_length, 128)
 
-    buffer_size = n_notes - seq_length  # the number of items in the dataset
+    buffer_size = len(all_notes) - seq_length  # the number of items in the dataset
     train_ds = (seq_ds
                 .shuffle(buffer_size)
                 .batch(batch_size, drop_remainder=True)
@@ -94,19 +86,6 @@ def create_sequences(dataset: tf.data.Dataset, seq_length: int, vocab_size = 128
 
     return sequences.map(split_labels, num_parallel_calls=tf.data.AUTOTUNE)
 
-def combined_loss(y_true: tf.Tensor, y_pred: tf.Tensor):
-    primary_loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)(y_true, y_pred)
-    probabilities = tf.nn.softmax(y_pred)
-    predicted_note = tf.argmax(probabilities, axis=-1)
-
-    penalty = tf.reduce_sum(tf.maximum(predicted_note - 88, 0))
-
-    penalty_weight = 0.1
-
-    total_loss = primary_loss + tf.cast(penalty_weight, tf.float32) * tf.cast(penalty, tf.float32)
-
-    return total_loss
-
 def build_model(train_ds, seq_length):
     input_shape = (seq_length, 3)
     learning_rate = 0.005
@@ -125,7 +104,7 @@ def build_model(train_ds, seq_length):
     model = tf.keras.Model(inputs, outputs)
 
     loss = {
-        'pitch': combined_loss,
+        'pitch': tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
         'step': mse_with_positive_pressure,
         'duration': mse_with_positive_pressure,
     }
@@ -154,7 +133,7 @@ def build_model(train_ds, seq_length):
 
     model.fit(
         train_ds,
-        epochs=50,
+        epochs=1,
         callbacks=callbacks,
     )
 
@@ -163,7 +142,7 @@ def build_model(train_ds, seq_length):
 def create_model():
     load_data.load()
     filenames = glob.glob(str(variables.get_data_dir()/'**/*.mid*'))
-    dataset = create_dataset(filenames, 500)
+    dataset = create_dataset(filenames, 1)
     model = build_model(dataset, 25)
     return model
 
