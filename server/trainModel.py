@@ -58,10 +58,6 @@ def create_dataset(filenames, num_files):
 
     return train_ds
 
-def mse_with_positive_pressure(y_true: tf.Tensor, y_pred: tf.Tensor):
-  mse = (y_true - y_pred) ** 2
-  positive_pressure = 10 * tf.maximum(-y_pred, 0.0)
-  return tf.reduce_mean(mse + positive_pressure)
 
 def create_sequences(dataset: tf.data.Dataset, seq_length: int, vocab_size = 128) -> tf.data.Dataset:
     """Returns TF Dataset of sequence and label examples."""
@@ -89,6 +85,22 @@ def create_sequences(dataset: tf.data.Dataset, seq_length: int, vocab_size = 128
 def build_model(train_ds, seq_length):
     input_shape = (seq_length, 3)
     learning_rate = 0.005
+
+    model = Sequential()
+    model.add(Dropout(0.2))
+    model.add(LSTM(
+        512,
+        input_shape=(networkInputShaped.shape[1], networkInputShaped.shape[2]),
+        return_sequences=True
+    ))
+    model.add(Dense(256))
+    model.add(Dense(256))
+    model.add(LSTM(512, return_sequences=True))
+    model.add(Dense(256))
+    model.add(LSTM(512))
+    model.add(Dense(numPitches))
+    model.add(Activation('softmax'))
+    model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
     inputs = tf.keras.Input(input_shape)
     x = tf.keras.layers.LSTM(128, return_sequences=True)(inputs)  
