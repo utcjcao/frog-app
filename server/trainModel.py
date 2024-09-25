@@ -90,7 +90,7 @@ def build_model(train_ds, seq_length):
     model.add(Dropout(0.2))
     model.add(LSTM(
         512,
-        input_shape=(networkInputShaped.shape[1], networkInputShaped.shape[2]),
+        input_shape=input_shape,
         return_sequences=True
     ))
     model.add(Dense(256))
@@ -98,7 +98,7 @@ def build_model(train_ds, seq_length):
     model.add(LSTM(512, return_sequences=True))
     model.add(Dense(256))
     model.add(LSTM(512))
-    model.add(Dense(numPitches))
+    model.add(Dense(128))
     model.add(Activation('softmax'))
     model.compile(loss='categorical_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
 
