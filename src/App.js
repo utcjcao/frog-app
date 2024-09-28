@@ -1,69 +1,79 @@
 import React, { useState, useEffect } from "react";
-import SpriteAnimation from "./SpriteAnimation";
-import FrogDefaultSheet from "./sprite-sheets/frog-default.png";
-import FrogSingingSheet from "./sprite-sheets/frog-singing.png";
 import "./App.css";
-import MidiPlayer from "./MidiPlayer";
-import Keyboard from "./Keyboard";
-import { io } from "socket.io-client";
-import GenerateSeeded from "./GenerateSeeded";
+import * as mm from "@magenta/music";
+import FrogRow from "./FrogRow.js";
 
 const App = () => {
-  const [socket, setSocket] = useState();
-  const [recordedNotes, setRecordedNotes] = useState([]);
-  const [isLoading, setLoading] = useState(false);
-  const [notes, setNotes] = useState([]);
-  const [error, setError] = useState("");
-
+  const [modelState, setModelState] = useState("loading");
+  const [frogStates, setFrogStates] = useState([false, false, false]);
+  const [sequence, setSequence] = useState(null);
+  const loadModel = async () => {
+    await model.initialize();
+    setModelState("finished");
+  };
   useEffect(() => {
-    const s = io("http://localhost:5000");
-    setSocket(s);
-    return () => {
-      s.disconnect();
-    };
+    loadModel();
   }, []);
 
-  const handleLearn = () => {
-    if (recordedNotes.length >= 5 && recordedNotes.length <= 25) {
-      socket.emit("generate-sequence", recordedNotes);
-      setRecordedNotes([]);
-      setLoading(true);
-      setError("");
-    } else if (recordedNotes.length <= 5) {
-      setError("too short!");
-    } else {
-      setError("too long!");
-    }
+  const model = new mm.MusicRNN(
+    "https://storage.googleapis.com/magentadata/js/checkpoints/music_rnn/basic_rnn"
+  );
+
+  const generateSequence = async () => {
+    const seed = {
+      notes: [
+        { pitch: 60, startTime: 0.0, endTime: 0.5 },
+        { pitch: 62, startTime: 0.5, endTime: 1.0 },
+        { pitch: 64, startTime: 1.0, endTime: 1.5 },
+      ],
+      totalTime: 1.5,
+    };
+    const generatedSequence = await model.continueSequence(seed, 20, 1.0);
+    setSequence(generatedSequence);
   };
 
-  const handleNotePlay = (note) => {
-    if (socket == null) return;
-
-    setRecordedNotes((prevNotes) => [...prevNotes, note]);
+  const playSequence = async () => {
+    if (!sequence) return;
+    const player = new mm.SoundFontPlayer(
+      "https://storage.googleapis.com/magentadata/js/soundfonts/sgm_plus"
+    );
+    await player.loadSamples(sequence);
+    player.start(sequence);
+    sequence.notes.forEach((note, index) => {
+      setTimeout(() => {
+        const frogIndex = index % frogStates.length;
+        triggerFrogAnimation(frogIndex);
+      }, note.startTime * 1000);
+    });
   };
-  useEffect(() => {
-    if (socket == null) return;
-    const handler = (data) => {
-      setNotes(data);
-      setLoading(false);
-    };
-    socket.on("recieve-sequence", handler);
-    return () => {
-      socket.off("recieve-sequence", handler);
-    };
-  }, [socket]);
+
+  const triggerFrogAnimation = (frogIndex) => {
+    setFrogStates((prevFrogs) => {
+      const newFrogs = [...prevFrogs];
+      newFrogs[frogIndex] = true;
+      return newFrogs;
+    });
+
+    setTimeout(() => {
+      setFrogStates((prevFrogs) => {
+        const newFrogs = [...prevFrogs];
+        newFrogs[frogIndex] = false;
+        return newFrogs;
+      });
+    }, 500);
+  };
 
   return (
     <div>
-      {isLoading ? (
-        <p>loading!</p>
-      ) : (
-        <Keyboard handleNotePlay={handleNotePlay}></Keyboard>
-      )}
-      <p>{recordedNotes}</p>
-      <p>{error}</p>
-      <button onClick={handleLearn}>Learn!</button>
-      <MidiPlayer notes={notes}></MidiPlayer>
+      <div>
+        {modelState == "loading" ? (
+          <div>model loading</div>
+        ) : (
+          <button onClick={generateSequence}>generate !</button>
+        )}
+      </div>
+      <button onClick={playSequence}>play !</button>
+      <FrogRow frogs={frogStates} />
     </div>
   );
 };
